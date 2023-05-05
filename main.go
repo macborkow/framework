@@ -162,7 +162,7 @@ func main() {
 			}
 
 			if !isStanding {
-				if d.XSpeed*float32(d.Direction) > 2 {
+				if d.XSpeed*float32(d.Direction) > 3 {
 					d.State = runState
 				} else {
 					d.State = walkState
