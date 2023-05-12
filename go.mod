@@ -1,4 +1,4 @@
-module github.com/macborkow/framework/v2
+module github.com/macborkow/framework
 
 go 1.15
 

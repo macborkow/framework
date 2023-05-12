@@ -2,7 +2,6 @@ package main
 
 import (
 	rl "github.com/gen2brain/raylib-go/raylib"
-	"strconv"
 )
 
 const (
@@ -11,16 +10,6 @@ const (
 	maxSpeed = 5
 	deAcc    = 6
 )
-
-type DogState struct {
-	Sprite       rl.Texture2D
-	Speed        float32
-	MaxFrames    int
-	SpriteWidth  int
-	SpriteHeight int
-	LoopFrom     int
-	Reverse      bool
-}
 
 type Dog struct {
 	Position    rl.Vector2
@@ -31,108 +20,26 @@ type Dog struct {
 	XSpeed      float32
 }
 
-type Timer struct {
-	StartTime float64 // Start time (seconds)
-	LifeTime  float64 // Lifetime (seconds)
-}
-
-func StartTimer(timer *Timer, lifetime float64) {
-	timer.StartTime = rl.GetTime()
-	timer.LifeTime = lifetime
-}
-
-func TimerDone(timer Timer) bool {
-	return rl.GetTime()-timer.StartTime >= timer.LifeTime
-}
-
-func GetElapsed(timer Timer) float64 {
-	return rl.GetTime() - timer.StartTime
-}
-
-func scaleImage(path string) rl.Texture2D {
-	image := rl.LoadImage(path)
-	rl.ImageResizeNN(image, image.Width*scale, image.Height*scale)
-	return rl.LoadTextureFromImage(image)
-}
-
 func main() {
 
 	rl.InitWindow(800, 450, "framework")
 
-	houndIdle := scaleImage("assets/hellhound/hell-hound-idle.png")
-
-	runState := DogState{
-		scaleImage("assets/hellhound/hell-hound-run.png"),
-		9,
-		5,
-		67,
-		32,
-		0,
-		false,
-	}
-
-	walkState := DogState{
-		scaleImage("assets/hellhound/hell-hound-walk.png"),
-		3,
-		12,
-		64,
-		32,
-		0,
-		false,
-	}
-
-	standState := DogState{
-		houndIdle,
-		0,
-		1,
-		64,
-		32,
-		0,
-		false,
-	}
-
-	idleState := DogState{
-		houndIdle,
-		0,
-		6,
-		64,
-		32,
-		2,
-		false,
-	}
-
-	riseState := DogState{
-		houndIdle,
-		0,
-		6,
-		64,
-		32,
-		0,
-		true,
-	}
-
-	fallState := DogState{
-		scaleImage("assets/hellhound/hell-hound-jump.png"),
-		0,
-		0,
-		64,
-		48,
-		4,
-		false,
-	}
+	dogState := GetStates()
 
 	d := Dog{
 		rl.NewVector2(250, 0),
 		0,
-		walkState,
+		dogState["standState"],
 		-1,
 		0,
 		0,
 	}
 
+
 	var riseTimer Timer
 
 	defer rl.CloseWindow()
+
 	rl.SetTargetFPS(60)
 	framesCounter := 0
 
@@ -151,7 +58,7 @@ func main() {
 		lastState := d.State
 
 		isStanding := true
-		if !(d.State == idleState || d.State == riseState || d.State == fallState) {
+		if !(d.State == dogState["idleState"] || d.State == dogState["riseState"] || d.State == dogState["fallState"]) {
 			isStanding = false
 			if rl.IsKeyDown(rl.KeyRight) {
 				d.Direction = 1
@@ -163,35 +70,35 @@ func main() {
 
 			if !isStanding {
 				if d.XSpeed*float32(d.Direction) > 3 {
-					d.State = runState
+					d.State = dogState["runState"]
 				} else {
-					d.State = walkState
+					d.State = dogState["walkState"]
 				}
 			} else {
-				d.State = standState
+				d.State = dogState["standState"]
 			}
 
 			if d.YSpeed != 0 {
-				d.State = fallState
+				d.State = dogState["fallState"]
 			}
 
 			if rl.IsKeyDown(rl.KeySpace) && d.XSpeed == 0 {
 				StartTimer(&riseTimer, 2)
-				d.State = idleState
+				d.State = dogState["idleState"]
 			}
 		}
 
 		if TimerDone(riseTimer) {
-			if d.State == idleState {
-				d.State = riseState
-			} else if d.State == riseState {
+			if d.State == dogState["idleState"] {
+				d.State = dogState["riseState"]
+			} else if d.State == dogState["riseState"] {
 				if d.AnimCounter == 5 {
-					d.State = standState
+					d.State = dogState["standState"]
 				}
 			}
 		}
-		if d.YSpeed == 0 && lastState == fallState {
-			d.State = standState
+		if d.YSpeed == 0 && lastState == dogState["fallState"] {
+			d.State = dogState["standState"]
 		}
 
 		if lastState != d.State {
@@ -222,7 +129,7 @@ func main() {
 			d.Position.Y += d.YSpeed
 		} else {
 			d.YSpeed = 0
-			if lastState == fallState {
+			if lastState == dogState["fallState"] {
 				d.Position.Y += 16
 			}
 		}
@@ -231,7 +138,7 @@ func main() {
 		rl.BeginDrawing()
 
 		rl.ClearBackground(rl.RayWhite)
-		rl.DrawText("currentFrame: "+strconv.Itoa(d.AnimCounter), 190, 200, 20, rl.LightGray)
+		// rl.DrawText("currentFrame: "+strconv.Itoa(d.AnimCounter), 190, 200, 20, rl.LightGray)
 
 		currentFrame := d.AnimCounter
 
